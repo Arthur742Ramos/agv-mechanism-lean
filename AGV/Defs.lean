@@ -124,11 +124,36 @@ theorem pmf_sum_one (i : Fin n) :
 
 /-- The AGV allocation is ex post efficient. -/
 theorem agv_efficient (hn : 2 ≤ n) : IsEfficient v (xmax v) := by
-  sorry
+  intro t y
+  exact xmax_optimal v t y
 
 /-- The AGV transfers are ex post budget balanced. -/
 theorem agv_budget_balanced (hn : 2 ≤ n) : IsBudgetBalanced (agvTransfer v π) := by
-  sorry
+  intro t
+  let g : Fin n → ℝ := fun i => extReceipt v π i (t i)
+  have herase (i : Fin n) :
+      (∑ j ∈ Finset.univ.erase i, g j) = (∑ j, g j) - g i :=
+    Finset.sum_erase_eq_sub (Finset.mem_univ i)
+  have htotal :
+      (∑ i : Fin n, ∑ j ∈ Finset.univ.erase i, g j) =
+        ((n : ℝ) - 1) * ∑ j, g j := by
+    calc
+      (∑ i : Fin n, ∑ j ∈ Finset.univ.erase i, g j) =
+          ∑ i : Fin n, ((∑ j, g j) - g i) := by
+        exact Finset.sum_congr rfl (fun i _ => herase i)
+      _ = (n : ℝ) * (∑ j, g j) - ∑ i, g i := by
+        rw [Finset.sum_sub_distrib]
+        simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin,
+          nsmul_eq_mul]
+      _ = ((n : ℝ) - 1) * ∑ j, g j := by
+        rw [sub_mul, one_mul]
+  have hn' : (1 : ℝ) < (n : ℝ) :=
+    Nat.one_lt_cast.mpr (lt_of_lt_of_le (by decide : (1 : ℕ) < 2) hn)
+  have hne : (n : ℝ) - 1 ≠ 0 := sub_ne_zero.mpr (ne_of_gt hn')
+  change (∑ i : Fin n,
+    (g i - (1 / ((n : ℝ) - 1)) * ∑ j ∈ Finset.univ.erase i, g j)) = 0
+  rw [Finset.sum_sub_distrib, ← Finset.mul_sum, htotal, ← mul_assoc,
+    div_mul_cancel₀ 1 hne, one_mul, sub_self]
 
 /-- The AGV mechanism is Bayesian incentive compatible under independent priors. -/
 theorem agv_bic (hn : 2 ≤ n) : IsBIC v π (xmax v) (agvTransfer v π) := by
