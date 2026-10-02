@@ -155,16 +155,125 @@ theorem agv_budget_balanced (hn : 2 ≤ n) : IsBudgetBalanced (agvTransfer v π)
   rw [Finset.sum_sub_distrib, ← Finset.mul_sum, htotal, ← mul_assoc,
     div_mul_cancel₀ 1 hne, one_mul, sub_self]
 
+/-- Independent priors give total joint probability mass one. -/
+theorem weight_sum_one : (∑ t : (j : Fin n) → T j, weight π t) = 1 := by
+  classical
+  calc
+    (∑ t : (j : Fin n) → T j, weight π t) =
+        ∏ j : Fin n, ∑ a : T j, (((π j a).toNNReal : ℝ≥0) : ℝ) := by
+      exact (Fintype.prod_sum
+        (fun j a => (((π j a).toNNReal : ℝ≥0) : ℝ))).symm
+    _ = 1 := by simp only [pmf_sum_one, Finset.prod_const_one]
+
+/-- Each joint probability weight is nonnegative. -/
+theorem weight_nonneg (t : (j : Fin n) → T j) : 0 ≤ weight π t := by
+  unfold weight
+  exact Finset.prod_nonneg (fun j _ => NNReal.coe_nonneg _)
+
+/-- Welfare at a spliced profile separates the agent's value from the others' values. -/
+theorem welfare_splice (i : Fin n) (s : T i) (t : (j : Fin n) → T j) (x : X) :
+    welfare v (splice i s t) x =
+      v i x s + ∑ j ∈ Finset.univ.erase i, v j x (t j) := by
+  classical
+  unfold welfare
+  rw [← Finset.add_sum_erase Finset.univ
+    (fun j => v j x ((splice i s t) j)) (Finset.mem_univ i)]
+  simp only [splice, Function.update_self]
+  congr 1
+  apply Finset.sum_congr rfl
+  intro j hj
+  rw [Function.update_of_ne (Finset.mem_erase.mp hj).1]
+
+/-- Changing an agent's report changes its receipt but leaves its rebate unchanged. -/
+theorem agvTransfer_splice (i : Fin n) (r : T i) (t : (j : Fin n) → T j) :
+    agvTransfer v π i (splice i r t) =
+      extReceipt v π i r - (1 / ((n : ℝ) - 1)) *
+        ∑ j ∈ Finset.univ.erase i, extReceipt v π j (t j) := by
+  classical
+  have herase :
+      (∑ j ∈ Finset.univ.erase i, extReceipt v π j ((splice i r t) j)) =
+        ∑ j ∈ Finset.univ.erase i, extReceipt v π j (t j) := by
+    apply Finset.sum_congr rfl
+    intro j hj
+    simp only [splice, Function.update_of_ne (Finset.mem_erase.mp hj).1]
+  unfold agvTransfer
+  rw [show (splice i r t) i = r from Function.update_self i r t, herase]
+
+/-- Interim AGV utility is expected welfare minus a report-independent expected rebate. -/
+theorem interimUtil_agv_eq (i : Fin n) (s r : T i) :
+    interimUtil v π (xmax v) (agvTransfer v π) i s r =
+      (∑ t : (j : Fin n) → T j,
+        weight π t * welfare v (splice i s t) (xmax v (splice i r t))) -
+      ∑ t : (j : Fin n) → T j, weight π t *
+        ((1 / ((n : ℝ) - 1)) *
+          ∑ j ∈ Finset.univ.erase i, extReceipt v π j (t j)) := by
+  classical
+  let R : ((j : Fin n) → T j) → ℝ := fun t =>
+    (1 / ((n : ℝ) - 1)) * ∑ j ∈ Finset.univ.erase i, extReceipt v π j (t j)
+  have htransfer :
+      (∑ t : (j : Fin n) → T j, weight π t * agvTransfer v π i (splice i r t)) =
+        extReceipt v π i r - ∑ t : (j : Fin n) → T j, weight π t * R t := by
+    calc
+      (∑ t : (j : Fin n) → T j, weight π t * agvTransfer v π i (splice i r t)) =
+          ∑ t : (j : Fin n) → T j, weight π t * (extReceipt v π i r - R t) := by
+        apply Finset.sum_congr rfl
+        intro t _
+        rw [agvTransfer_splice]
+      _ = (∑ t : (j : Fin n) → T j, weight π t) * extReceipt v π i r -
+          ∑ t : (j : Fin n) → T j, weight π t * R t := by
+        simp only [mul_sub, Finset.sum_sub_distrib, ← Finset.sum_mul]
+      _ = extReceipt v π i r - ∑ t : (j : Fin n) → T j, weight π t * R t := by
+        rw [weight_sum_one, one_mul]
+  have hreceipt :
+      (∑ t : (j : Fin n) → T j, weight π t * v i (xmax v (splice i r t)) s) +
+        extReceipt v π i r =
+      ∑ t : (j : Fin n) → T j,
+        weight π t * welfare v (splice i s t) (xmax v (splice i r t)) := by
+    calc
+      (∑ t : (j : Fin n) → T j, weight π t * v i (xmax v (splice i r t)) s) +
+          extReceipt v π i r =
+        ∑ t : (j : Fin n) → T j,
+          (weight π t * v i (xmax v (splice i r t)) s +
+            weight π t * ∑ j ∈ Finset.univ.erase i,
+              v j (xmax v (splice i r t)) (t j)) := by
+        rw [extReceipt, Finset.sum_add_distrib]
+      _ = ∑ t : (j : Fin n) → T j,
+          weight π t * welfare v (splice i s t) (xmax v (splice i r t)) := by
+        apply Finset.sum_congr rfl
+        intro t _
+        rw [← mul_add, welfare_splice]
+  unfold interimUtil
+  calc
+    (∑ t : (j : Fin n) → T j, weight π t *
+        (v i (xmax v (splice i r t)) s + agvTransfer v π i (splice i r t))) =
+      (∑ t : (j : Fin n) → T j, weight π t * v i (xmax v (splice i r t)) s) +
+        ∑ t : (j : Fin n) → T j, weight π t * agvTransfer v π i (splice i r t) := by
+      simp only [mul_add, Finset.sum_add_distrib]
+    _ = (∑ t : (j : Fin n) → T j, weight π t * v i (xmax v (splice i r t)) s) +
+        (extReceipt v π i r - ∑ t : (j : Fin n) → T j, weight π t * R t) := by
+      rw [htransfer]
+    _ = (∑ t : (j : Fin n) → T j,
+        weight π t * welfare v (splice i s t) (xmax v (splice i r t))) -
+        ∑ t : (j : Fin n) → T j, weight π t * R t := by
+      rw [← add_sub_assoc, hreceipt]
+
 /-- The AGV mechanism is Bayesian incentive compatible under independent priors. -/
 theorem agv_bic (hn : 2 ≤ n) : IsBIC v π (xmax v) (agvTransfer v π) := by
-  sorry
+  classical
+  intro i s r
+  rw [interimUtil_agv_eq, interimUtil_agv_eq]
+  apply sub_le_sub_right
+  apply Finset.sum_le_sum
+  intro t _
+  exact mul_le_mul_of_nonneg_left
+    (xmax_optimal v (splice i s t) (xmax v (splice i r t))) (weight_nonneg π t)
 
 /-- With at least two agents, AGV is efficient, Bayesian incentive compatible,
 and ex post budget balanced. -/
 theorem agv_theorem (hn : 2 ≤ n) :
     IsEfficient v (xmax v) ∧ IsBIC v π (xmax v) (agvTransfer v π) ∧
       IsBudgetBalanced (agvTransfer v π) := by
-  sorry
+  exact ⟨agv_efficient v hn, agv_bic v π hn, agv_budget_balanced v π hn⟩
 
 end
 
