@@ -1,0 +1,18 @@
+project:
+  name: agv-mechanism-lean
+  authors:
+    - Arthur Freitas Ramos
+    - David Barros Hulak
+    - Ruy Jose Guerra Barretto de Queiroz
+  responsible_maintainers:
+    - Arthur Freitas Ramos
+    - David Barros Hulak
+    - Ruy Jose Guerra Barretto de Queiroz
+  description: A Lean 4 formalization of the AGV (d'Aspremont-Gérard-Varet-Arrow) expected-externality mechanism: with independent types, ex post efficiency, Bayesian incentive compatibility, and budget balance are jointly attainable.
+  license: BSD-3-Clause
+classification:
+  msc2020:
+    - 91B26
+  arxiv:
+    - cs.GT
+    - econ.TH
