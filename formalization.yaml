@@ -1,18 +1,107 @@
+version: "v0.4"
 project:
-  name: agv-mechanism-lean
+  name: "agv-mechanism-lean"
+  description: >-
+    Lean 4 formalization of the AGV (d'Aspremont-Gérard-Varet-Arrow)
+    expected-externality mechanism: with independent types, ex post
+    efficiency, Bayesian incentive compatibility, and budget balance are
+    jointly attainable. Agents are indexed by Fin n with 2 ≤ n; each agent
+    has a finite nonempty type space with an independent PMF prior;
+    alternatives form a finite nonempty type; values are private.
+    The efficient rule xmax maximizes utilitarian welfare, and agvTransfer
+    pays each agent its expected externality minus an equal share of the
+    other agents' receipts. Interim individual rationality is not claimed.
   authors:
-    - Arthur Freitas Ramos
-    - David Barros Hulak
-    - Ruy Jose Guerra Barretto de Queiroz
+    - "Arthur Freitas Ramos"
+    - "David Barros Hulak"
+    - "Ruy Jose Guerra Barretto de Queiroz"
   responsible_maintainers:
-    - Arthur Freitas Ramos
-    - David Barros Hulak
-    - Ruy Jose Guerra Barretto de Queiroz
-  description: A Lean 4 formalization of the AGV (d'Aspremont-Gérard-Varet-Arrow) expected-externality mechanism: with independent types, ex post efficiency, Bayesian incentive compatibility, and budget balance are jointly attainable.
-  license: BSD-3-Clause
+    - "Arthur Freitas Ramos"
+    - "David Barros Hulak"
+    - "Ruy Jose Guerra Barretto de Queiroz"
+  license: "BSD-3-Clause"
+repository:
+  role: "substantive-development"
 classification:
-  msc2020:
-    - 91B26
-  arxiv:
-    - cs.GT
-    - econ.TH
+  arxiv: ["cs.GT", "econ.TH"]
+  msc2020: ["91B26"]
+sources:
+  - title: "Incentives and incomplete information"
+    authors: ["Claude d'Aspremont", "Louis-André Gérard-Varet"]
+    type: "paper"
+    year: 1979
+    url: "https://www.di.ens.fr/~aspremon/Claude/PDFs/dAsp79b"
+    relationship: "formalizes"
+    note: >-
+      The selected contracts formalize the finite-type AGV
+      expected-externality mechanism: the efficient decision rule xmax,
+      the expected-externality transfers agvTransfer, and the three
+      properties ex post efficiency (agv_efficient), Bayesian incentive
+      compatibility (agv_bic), and ex post budget balance
+      (agv_budget_balanced), conjoined in agv_theorem.
+    author_endorsement: "not-contacted"
+automation:
+  methods:
+    - method: "AI-assisted Lean proof development"
+      system: "OpenAI Codex"
+      role: "Source inspection, proof implementation, compilation, placeholder and axiom audits, and package preparation."
+    - method: "Lean tactic automation"
+      role: "simp, omega, classical reasoning, and finite-sum manipulations."
+review:
+  status: >-
+    The completed library was reported to build with zero proof placeholders;
+    the four capstone theorems were reported to depend only on propext,
+    Classical.choice, and Quot.sound. The proofs were developed with AI
+    assistance and mechanically checked. This packaging pass performs
+    source inspection against the final Lean binders. The supplied scripts
+    support subsequent package validation; the official comparator checks
+    exact contracts. No separate independent human review of the proofs was
+    performed.
+  human_review: "No independent human review of the proofs or original-author endorsement is claimed."
+  limitations: >-
+    Finite nonempty alternatives with [Fintype X] [Nonempty X]
+    [DecidableEq X]; finite nonempty type spaces with per-agent instances;
+    independent priors as (i : Fin n) → PMF (T i) with product-prior
+    weights; private values v : (i : Fin n) → X → T i → ℝ. All four
+    theorems require (hn : 2 ≤ n). Interim individual rationality is not
+    claimed.
+alignment:
+  statements:
+    - lean: "AGV.agv_efficient"
+      description: >-
+        Under {n : Nat} {T : Fin n → Type} {X : Type} with the Fintype /
+        Nonempty / DecidableEq instances, the exact binders are
+        (v : (i : Fin n) → X → T i → ℝ) (hn : 2 ≤ n). The conclusion is
+        IsEfficient v (xmax v): the welfare-maximizing rule is ex post
+        efficient. No prior π appears in this statement.
+    - lean: "AGV.agv_bic"
+      description: >-
+        Under the same implicits and instances, the exact binders are
+        (v : (i : Fin n) → X → T i → ℝ) (π : (i : Fin n) → PMF (T i))
+        (hn : 2 ≤ n). The conclusion is
+        IsBIC v π (xmax v) (agvTransfer v π): truthful reporting maximizes
+        interim expected utility for every agent and own type.
+    - lean: "AGV.agv_budget_balanced"
+      description: >-
+        Under the same implicits and instances, the exact binders are
+        (v : (i : Fin n) → X → T i → ℝ) (π : (i : Fin n) → PMF (T i))
+        (hn : 2 ≤ n). The conclusion is
+        IsBudgetBalanced (agvTransfer v π): transfers sum to zero at every
+        report profile.
+    - lean: "AGV.agv_theorem"
+      description: >-
+        Under the same implicits and instances, the exact binders are
+        (v : (i : Fin n) → X → T i → ℝ) (π : (i : Fin n) → PMF (T i))
+        (hn : 2 ≤ n). The conclusion is the conjunction
+        IsEfficient v (xmax v) ∧ IsBIC v π (xmax v) (agvTransfer v π) ∧
+        IsBudgetBalanced (agvTransfer v π).
+related_formalizations:
+  - id: "palomar-registry-search-2026-10-02"
+    title: "Dated Palomar registry search for AGV formalizations"
+    relationship: "none-found-in-registry-search"
+    note: >-
+      The Palomar registry search performed on 2026-10-02 for "agv",
+      "dagva", "externality mechanism", "gerard-varet", and
+      "expected externality" returned zero results. This records only that
+      dated registry search and makes no claim about formalizations outside
+      its results.
